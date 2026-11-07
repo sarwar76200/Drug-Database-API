@@ -244,6 +244,74 @@ app.get("/api/drugs/:id/alternatives", async (req, res) => {
 });
 
 
+// FIND ALTERNATIVES BY BRAND NAME
+// GET /api/drugs/alternatives?brand_name=Napa&page=1&limit=20
+app.get("/api/drugs/alternatives", async (req, res) => {
+    try {
+        const { brand_name } = req.query;
+
+        if (!brand_name || !brand_name.trim()) {
+            return res.status(400).json({
+                error: "brand_name is required"
+            });
+        }
+
+        const { page, limit, skip } = getPagination(req.query);
+
+        const drug = await Drug.findOne({
+            brand_name: {
+                $regex: `^${brand_name.trim().replace(
+                    /[.*+?^${}()|[\]\\]/g,
+                    "\\$&"
+                )}$`,
+                $options: "i"
+            }
+        });
+
+        if (!drug) {
+            return res.status(404).json({
+                error: "Drug not found"
+            });
+        }
+
+        if (!drug.generic_name) {
+            return res.json({
+                drug,
+                alternatives: [],
+                pagination: getPaginationMetadata(page, limit, 0)
+            });
+        }
+
+        const filter = {
+            generic_name: drug.generic_name,
+            _id: { $ne: drug._id }
+        };
+
+        const [alternatives, total] = await Promise.all([
+            Drug.find(filter)
+                .sort({ brand_name: 1, _id: 1 })
+                .skip(skip)
+                .limit(limit),
+
+            Drug.countDocuments(filter)
+        ]);
+
+        res.json({
+            drug,
+            alternatives,
+            pagination: getPaginationMetadata(page, limit, total)
+        });
+
+    } catch (error) {
+        console.error(error);
+
+        res.status(500).json({
+            error: "Internal server error"
+        });
+    }
+});
+
+
 const PORT = process.env.PORT || 3000;
 const startServer = async () => {
     await connectDB();
