@@ -659,14 +659,3 @@ The current implementation is not a database transaction, so if a later batch fa
 ## Authentication
 
 Authentication and authorization are not currently implemented.
-
-The API currently assumes that endpoints are accessible to clients that can reach the server.
-
-For production use, consider adding:
-
-- JWT authentication
-- Role-based authorization
-- Rate limiting
-- Request validation
-- Audit logging
-- HTTPS

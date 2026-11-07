@@ -1,4 +1,7 @@
 import "dotenv/config";
+import { marked } from "marked";
+import fs from "fs/promises";
+import path from "path";
 import express, { json } from "express";
 import cors from "cors";
 import mongoose from "mongoose";
@@ -39,6 +42,101 @@ const getPaginationMetadata = (page, limit, total) => {
     };
 };
 
+app.get("/", async (req, res) => {
+    try {
+        const filePath = path.join(
+            process.cwd(),
+            "drug_api_reference.md"
+        );
+
+        const markdown = await fs.readFile(filePath, "utf-8");
+        const html = marked.parse(markdown);
+
+        res.send(`
+            <!DOCTYPE html>
+            <html lang="en">
+            <head>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <title>Drug API Documentation</title>
+                <style>
+                    body {
+                        font-family: Arial, sans-serif;
+                        max-width: 1000px;
+                        margin: 40px auto;
+                        padding: 0 24px;
+                        line-height: 1.6;
+                        color: #24292f;
+                    }
+
+                    pre {
+                        background: #f6f8fa;
+                        padding: 16px;
+                        border-radius: 8px;
+                        overflow-x: auto;
+                    }
+
+                    code {
+                        font-family: Consolas, monospace;
+                    }
+
+                    :not(pre) > code {
+                        background: #f0f0f0;
+                        padding: 3px 6px;
+                        border-radius: 4px;
+                    }
+
+                    table {
+                        border-collapse: collapse;
+                        width: 100%;
+                    }
+
+                    th, td {
+                        border: 1px solid #ddd;
+                        padding: 10px;
+                        text-align: left;
+                    }
+
+                    th {
+                        background: #f6f8fa;
+                    }
+
+                    img {
+                        max-width: 100%;
+                    }
+                </style>
+            </head>
+            <body>
+                ${html}
+            </body>
+            </html>
+        `);
+    } catch (error) {
+        console.error(error);
+
+        res.status(500).send("Unable to load API documentation");
+    }
+});
+
+
+app.get("/health", async (req, res) => {
+    const mongoStatus =
+        mongoose.connection.readyState === 1
+            ? "connected"
+            : "disconnected";
+
+    const isHealthy = mongoStatus === "connected";
+
+    res.status(isHealthy ? 200 : 503).json({
+        status: isHealthy ? "healthy" : "unhealthy",
+        uptime: process.uptime(),
+        timestamp: new Date().toISOString(),
+        services: {
+            api: "healthy",
+            mongodb: mongoStatus
+        }
+    });
+});
 
 
 // GET /api/drugs?page=1&limit=20
