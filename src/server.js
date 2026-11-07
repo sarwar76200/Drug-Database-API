@@ -312,6 +312,50 @@ app.get("/api/drugs/alternatives", async (req, res) => {
 });
 
 
+
+// FIND BRAND NAMES BY GENERIC NAME
+// GET /api/drugs/brands?generic_name=Paracetamol&page=1&limit=20
+app.get("/api/drugs/brands", async (req, res) => {
+    try {
+        const { generic_name } = req.query;
+
+        if (!generic_name || !generic_name.trim()) {
+            return res.status(400).json({
+                error: "generic_name is required"
+            });
+        }
+
+        const { page, limit, skip } = getPagination(req.query);
+
+
+        const filter = {
+            generic_name
+        };
+
+        const [brands_names, total] = await Promise.all([
+            Drug.find(filter)
+                .sort({ brand_name: 1, _id: 1 })
+                .skip(skip)
+                .limit(limit),
+
+            Drug.countDocuments(filter)
+        ]);
+
+        res.json({
+            generic_name,
+            brands_names,
+            pagination: getPaginationMetadata(page, limit, total)
+        });
+
+    } catch (error) {
+        console.error(error);
+
+        res.status(500).json({
+            error: "Internal server error"
+        });
+    }
+});
+
 const PORT = process.env.PORT || 3000;
 const startServer = async () => {
     await connectDB();
