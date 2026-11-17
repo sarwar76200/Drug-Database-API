@@ -167,6 +167,34 @@ app.get("/api/drugs", async (req, res) => {
     }
 });
 
+// GET /api/drugs/:id
+app.get("/api/drugs/:id", async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        if (!mongoose.Types.ObjectId.isValid(id)) {
+            return res.status(400).json({
+                error: "Invalid drug ID"
+            });
+        }
+
+        const drug = await Drug.findById(id);
+
+        if (!drug) {
+            return res.status(404).json({
+                error: "Drug not found"
+            });
+        }
+
+        res.json(drug);
+    } catch (error) {
+        console.error(error);
+
+        res.status(500).json({
+            error: "Failed to retrieve drug"
+        });
+    }
+});
 
 
 // GET /api/drugs/search?brand_name=napa&page=1&limit=20
