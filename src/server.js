@@ -167,6 +167,7 @@ app.get("/api/drugs", async (req, res) => {
     }
 });
 
+
 // GET /api/drugs/:id
 app.get("/api/drugs/:id", async (req, res) => {
     try {
