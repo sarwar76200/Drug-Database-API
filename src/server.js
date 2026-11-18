@@ -498,7 +498,7 @@
 import "dotenv/config";
 import express from "express";
 import cors from "cors";
-const { parse } = require("csv-parse/sync");
+import { parse } from "csv-parse/sync";
 import fs from "fs/promises";
 import path from "path";
 import { marked } from "marked";
