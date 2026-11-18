@@ -498,6 +498,7 @@
 import "dotenv/config";
 import express from "express";
 import cors from "cors";
+const { parse } = require("csv-parse/sync");
 import fs from "fs/promises";
 import path from "path";
 import { marked } from "marked";
@@ -517,14 +518,37 @@ const dataPath = path.join(process.cwd(), "data", "drugs.json");
 
 let drugs = [];
 
+// const loadDrugs = async () => {
+//     try {
+//         const data = await fs.readFile(dataPath, "utf-8");
+//         drugs = JSON.parse(data);
+
+//         console.log(`Loaded ${drugs.length} drugs`);
+//     } catch (error) {
+//         console.error("Failed to load drugs.json:", error.message);
+//         process.exit(1);
+//     }
+// };
+
 const loadDrugs = async () => {
     try {
         const data = await fs.readFile(dataPath, "utf-8");
-        drugs = JSON.parse(data);
+
+        drugs = parse(data, {
+            columns: true,
+            skip_empty_lines: true,
+            cast: (value, context) => {
+                if (context.column === "unit_price") {
+                    return Number(parseFloat(value).toFixed(2));
+                }
+
+                return value;
+            }
+        });
 
         console.log(`Loaded ${drugs.length} drugs`);
     } catch (error) {
-        console.error("Failed to load drugs.json:", error.message);
+        console.error("Failed to load drugs.csv:", error.message);
         process.exit(1);
     }
 };
