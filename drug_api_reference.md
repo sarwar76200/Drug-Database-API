@@ -83,7 +83,33 @@ GET /api/drugs?page=2&limit=20
 
 ---
 
-## 2. Search Drugs by Brand Name
+## 2. Get Drug by ID
+
+Returns the drug having the given id.
+
+### Request
+
+```http
+GET /api/drugs/:id
+```
+
+### Response
+
+```json
+{
+  "_id": "671234567890abcdef123456",
+  "brand_name": "Napa",
+  "generic_name": "Paracetamol",
+  "dosage_type": "Tablet",
+  "strength": "500 mg",
+  "pharmaceutical": "Beximco Pharmaceuticals Ltd.",
+  "unit_price": 1.2
+}
+```
+
+---
+
+## 3. Search Drugs by Brand Name
 
 Searches for drugs whose brand name contains the supplied text.
 
@@ -146,7 +172,7 @@ Napa One
 
 ---
 
-## 3. Get Brand Names from Generic Name
+## 4. Get Brand Names from Generic Name
 
 Get a list of brand names from the given generic name
 
@@ -212,7 +238,7 @@ PARACETAMOL
 
 ---
 
-## 4. Get Alternative Brands by Drug ID
+## 5. Get Alternative Brands by Drug ID
 
 Returns other drug brands with the same generic name as a selected drug.
 
@@ -238,6 +264,7 @@ GET /api/drugs/671234567890abcdef123456/alternatives
 
 | Parameter | Type | Default | Description |
 |---|---|---:|---|
+| `strong_match` | Integer | `0` | Whether to match everything i.e. dosage type and strengh |
 | `page` | Integer | `1` | Page number |
 | `limit` | Integer | `20` | Results per page; maximum 100 |
 
@@ -280,7 +307,7 @@ The original drug itself is excluded from the alternatives.
 
 ---
 
-## 5. Get Alternative Brands by Brand Name
+## 6. Get Alternative Brands by Brand Name
 
 Finds a drug using its brand name and returns other brands with the same generic name.
 
@@ -351,7 +378,7 @@ will find the same brand.
 
 ---
 
-## 6. Add a Single Drug
+## 7. Add a Single Drug
 
 Creates a new drug document.
 
@@ -393,7 +420,7 @@ Content-Type: application/json
 
 ---
 
-## 7. Bulk Insert Drugs
+## 8. Bulk Insert Drugs
 
 Creates multiple drug documents in a single API request.
 

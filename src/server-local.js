@@ -1,6 +1,8 @@
+
 import "dotenv/config";
 import express from "express";
 import cors from "cors";
+import { parse } from "csv-parse/sync";
 import fs from "fs/promises";
 import path from "path";
 import { marked } from "marked";
@@ -16,11 +18,16 @@ app.use(express.json());
 // Load data
 // --------------------------------------------------
 
-const dataPath = path.join(process.cwd(), "data", "drugs.json");
+const dataPath = path.join(process.cwd(), "data", "drugs.csv");
 
 let drugs = [];
 
 const loadDrugs = async () => {
+    const ext = dataPath.split('.').pop().toLowerCase();
+    if (ext === "csv") {
+        await loadDrugsCSV()
+        return
+    }
     try {
         const data = await fs.readFile(dataPath, "utf-8");
         drugs = JSON.parse(data);
@@ -28,6 +35,30 @@ const loadDrugs = async () => {
         console.log(`Loaded ${drugs.length} drugs`);
     } catch (error) {
         console.error("Failed to load drugs.json:", error.message);
+        process.exit(1);
+    }
+};
+
+const loadDrugsCSV = async () => {
+    try {
+        const data = await fs.readFile(dataPath, "utf-8");
+
+
+        drugs = parse(data, {
+            columns: true,
+            skip_empty_lines: true,
+            cast: (value, context) => {
+                if (context.column === "unit_price") {
+                    return Number(parseFloat(value).toFixed(2));
+                }
+
+                return value;
+            }
+        });
+
+        console.log(`Loaded ${drugs.length} drugs`);
+    } catch (error) {
+        console.error("Failed to load drugs.csv:", error.message);
         process.exit(1);
     }
 };
@@ -232,72 +263,6 @@ app.get("/api/drugs/search", (req, res) => {
 });
 
 // --------------------------------------------------
-// GET drug by ID
-// --------------------------------------------------
-
-app.get("/api/drugs/:id", (req, res) => {
-    const id = parseInt(req.params.id);
-
-    if (isNaN(id) || id < 0 || id >= drugs.length) {
-        return res.status(404).json({
-            error: "Drug not found"
-        });
-    }
-
-    const drug = drugs[id];
-
-    res.json({
-        ...drug,
-        id
-    });
-});
-
-// --------------------------------------------------
-// GET alternatives by drug ID
-// --------------------------------------------------
-
-app.get("/api/drugs/:id/alternatives", (req, res) => {
-    const id = parseInt(req.params.id);
-
-    if (isNaN(id) || id < 0 || id >= drugs.length) {
-        return res.status(404).json({
-            error: "Drug not found"
-        });
-    }
-
-    const drug = drugs[id];
-
-    const alternatives = drugs.filter(
-        (item, index) =>
-            index !== id &&
-            item.generic_name?.toLowerCase() ===
-            drug.generic_name?.toLowerCase()
-    );
-
-    const { page, limit, skip } = getPagination(
-        req.query
-    );
-
-    const data = alternatives.slice(
-        skip,
-        skip + limit
-    );
-
-    res.json({
-        drug: {
-            ...drug,
-            id
-        },
-        alternatives: data,
-        pagination: getPaginationMetadata(
-            page,
-            limit,
-            alternatives.length
-        )
-    });
-});
-
-// --------------------------------------------------
 // GET alternatives by brand name
 // --------------------------------------------------
 
@@ -355,6 +320,79 @@ app.get("/api/drugs/alternatives", (req, res) => {
         )
     });
 });
+
+// --------------------------------------------------
+// GET drug by ID
+// --------------------------------------------------
+
+app.get("/api/drugs/:id", (req, res) => {
+    const id = parseInt(req.params.id);
+
+    if (isNaN(id) || id < 0 || id >= drugs.length) {
+        return res.status(404).json({
+            error: "Drug not found"
+        });
+    }
+
+    const drug = drugs[id];
+
+    res.json({
+        ...drug,
+        id
+    });
+});
+
+// --------------------------------------------------
+// GET alternatives by drug ID
+// --------------------------------------------------
+
+app.get("/api/drugs/:id/alternatives", (req, res) => {
+    const id = parseInt(req.params.id);
+    const { strong_match } = req.query;
+
+    if (isNaN(id) || id < 0 || id >= drugs.length) {
+        return res.status(404).json({
+            error: "Drug not found"
+        });
+    }
+
+    const drug = drugs[id];
+
+    const alternatives = drugs.filter(
+        (item, index) =>
+            index !== id &&
+            item.generic_name?.toLowerCase() ===
+            drug.generic_name?.toLowerCase() &&
+            ((strong_match == 1 ? 0 : 1) || (
+                item.dosage_type?.toLowerCase() ===
+                drug.dosage_type?.toLowerCase() &&
+                item.strength?.toLowerCase() ===
+                drug.strength?.toLowerCase()))
+    );
+
+    const { page, limit, skip } = getPagination(
+        req.query
+    );
+
+    const data = alternatives.slice(
+        skip,
+        skip + limit
+    );
+
+    res.json({
+        drug: {
+            ...drug,
+            id
+        },
+        alternatives: data,
+        pagination: getPaginationMetadata(
+            page,
+            limit,
+            alternatives.length
+        )
+    });
+});
+
 
 // --------------------------------------------------
 // Start server
