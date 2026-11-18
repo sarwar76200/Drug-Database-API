@@ -514,7 +514,7 @@ app.use(express.json());
 // Load data
 // --------------------------------------------------
 
-const dataPath = path.join(process.cwd(), "data", "drugs.json");
+const dataPath = path.join(process.cwd(), "data", "drugs.csv");
 
 let drugs = [];
 
