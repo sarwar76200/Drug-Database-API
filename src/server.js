@@ -833,6 +833,8 @@ app.get("/api/drugs/alternatives", (req, res) => {
 
     const searchTerm = brand_name.trim();
 
+    console.log(searchTerm)
+
     const drugIndex = drugs.findIndex(
         (drug) =>
             drug.brand_name?.toLowerCase() ===
